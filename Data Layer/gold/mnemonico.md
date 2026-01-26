@@ -1,0 +1,53 @@
+# Dicionario de Mnemonicos - Gold Layer
+
+Este documento define todas as abreviacoes e convencoes de nomenclatura utilizadas no Star Schema da camada Gold.
+
+| Palavra | Sigla | 
+|---------|-------|
+| Tempo   | tmp   |
+| Dimensao| dim   |
+| data    | dat   |
+| ano     | ano   |
+| mes     | mes   |
+| dia     | dia   |
+| semana  | smn   |
+| nome    | nme   |
+| trimestre | trm |
+| verifica | ver  |
+| periodo | prd   |
+| horario | hrr   |
+| localizacao | loc |
+| local | lcl |
+| zona | zna |
+| regiao | reg |
+| tipo | tpo |
+| area | ara |
+| veiculo | vei |
+| categoria | ctg |
+| cliente | cli |
+| segmento | sgm |
+| total | ttl |
+| viagens | vig |
+| historico | hst |
+| pagamento | pag |
+| metodo | mtd |
+| fato | fat |
+| corrida(s) | crr |
+| distancia | dtc |
+| duracao | drc |
+| minutos | min |
+| valor | vlr |
+| quilometro | km |
+| por | por |
+| avaliacao | avl |
+| motorista | mtr |
+| completa | cpl |
+| cancelada | cnl |
+| status | stt |
+| rota | rta |
+| inter | itr |
+| regional | rgl |
+| hora | hra |
+| coleta | col |
+| booking | bok |
+| original | org |
