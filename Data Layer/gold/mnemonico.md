@@ -2,8 +2,8 @@
 
 Este documento define todas as abreviacoes e convencoes de nomenclatura utilizadas no Star Schema da camada Gold.
 
-| Palavra | Sigla | 
-|---------|-------|
+| Palavra | Sigla |
+| --------- | ------- |
 | Tempo   | tmp   |
 | Dimensao| dim   |
 | data    | dat   |
@@ -11,6 +11,8 @@ Este documento define todas as abreviacoes e convencoes de nomenclatura utilizad
 | mes     | mes   |
 | dia     | dia   |
 | semana  | smn   |
+| fim | fim |
+| pico | pic |
 | nome    | nme   |
 | trimestre | trm |
 | verifica | ver  |

@@ -28,7 +28,7 @@ CREATE TABLE dw.dim_tmp (
     mes_ano VARCHAR(7),
     ano_trm VARCHAR(7),
     prd_dia VARCHAR(10),
-    ver_hrr_pico BOOLEAN
+    ver_hrr_pic BOOLEAN
 );
 
 
@@ -42,7 +42,7 @@ COMMENT ON TABLE dw.dim_tmp IS 'Dimensao Tempo - Hierarquia temporal para analis
 COMMENT ON COLUMN dw.dim_tmp.tmp_srk IS 'Chave primaria surrogate';
 COMMENT ON COLUMN dw.dim_tmp.ver_fim_smn IS 'Indica se e sabado ou domingo';
 COMMENT ON COLUMN dw.dim_tmp.prd_dia IS 'Perido do dia (Manha/Tarde/Noite/Madrugada)';
-COMMENT ON COLUMN dw.dim_tmp.ver_hrr_pico IS 'Indica se e hrario de pico (7-10h ou 17-20h)';
+COMMENT ON COLUMN dw.dim_tmp.ver_hrr_pic IS 'Indica se e hrario de pic (7-10h ou 17-20h)';
 
 
 -- ============================================================================
