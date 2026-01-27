@@ -1,6 +1,6 @@
 -- ============================================================================
 -- GOLD LAYER: CONSULTAS ANALITICAS
--- Queries para analise de performance de corridas Uber
+-- Queries para analise de performance de crr Uber
 -- Proposito: Fornecer insights para dashboards Power BI
 -- ============================================================================
 
@@ -10,7 +10,7 @@
 -- ============================================================================
 -- Proposito: Validar integridade e contagem de registros em cada tabela
 -- Expectativa: Verificar se todas as tabelas foram populadas corretamente
--- Power BI: Card com total de registros por tabela
+-- Power BI: Card com ttl de registros por tabela
 SELECT 'dim_tmp' AS tabela, COUNT(*) AS linhas FROM dw.dim_tmp
 UNION ALL
 SELECT 'dim_loc' AS tabela, COUNT(*) AS linhas FROM dw.dim_loc
@@ -21,7 +21,7 @@ SELECT 'dim_cli' AS tabela, COUNT(*) AS linhas FROM dw.dim_cli
 UNION ALL
 SELECT 'dim_pag' AS tabela, COUNT(*) AS linhas FROM dw.dim_pag
 UNION ALL
-SELECT 'ft_crr' AS tabela, COUNT(*) AS linhas FROM dw.ft_crr
+SELECT 'fat_crr' AS tabela, COUNT(*) AS linhas FROM dw.fat_crr
 ORDER BY tabela;
 
 
@@ -30,24 +30,24 @@ ORDER BY tabela;
 -- ============================================================================
 -- Proposito: Medir volume, receita e rentabilidade por zona
 -- Expectativa: Identificar zonas mais lucrativas e com maior demanda
--- Power BI: Grafico de barras (receita por zona) + Mapa de calor
+-- Power BI: Grafico de barras (receita por zna) + Mapa de calor
 SELECT
-    lo.zona AS zona_origem,
-    ld.zona AS zona_destino,
-    COUNT(*) AS total_corridas,
-    SUM(f.distancia_km) AS distancia_total_km,
-    SUM(f.valor_corrida) AS receita_total,
-    AVG(f.valor_por_km) AS valor_medio_por_km,
-    AVG(f.duracao_minutos) AS duracao_media_min,
-    AVG(f.avaliacao_motorista) AS avaliacao_motorista_media,
-    SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) AS corridas_completas,
-    ROUND(100.0 * SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) / 
-          NULLIF(COUNT(*), 0), 2) AS taxa_conclusao_pct
-FROM dw.ft_crr f
-JOIN dw.dim_loc lo ON f.loc_ori_srk = lo.loc_srk
-JOIN dw.dim_loc ld ON f.loc_dst_srk = ld.loc_srk
-GROUP BY lo.zona, ld.zona
-ORDER BY receita_total DESC;
+    lo.zna AS zna_org,
+    ld.zna AS zna_dst,
+    COUNT(*) AS ttl_crr,
+    SUM(f.dtc_km) AS dtc_ttl_km,
+    SUM(f.vlr_crr) AS rct_ttl,
+    AVG(f.vlr_por_km) AS vlr_mdo_por_km,
+    AVG(f.drc_min) AS drc_mda_min,
+    AVG(f.avl_mtr) AS avl_mtr_mda,
+    SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) AS crr_cpl,
+    ROUND(100.0 * SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) / 
+          NULLIF(COUNT(*), 0), 2) AS txa_ccl_pct
+FROM dw.fat_crr f
+JOIN dw.dim_loc lo ON f.srk_loc_ori = lo.srk_loc
+JOIN dw.dim_loc ld ON f.srk_loc_dst = ld.srk_loc
+GROUP BY lo.zna, ld.zna
+ORDER BY rct_ttl DESC;
 
 
 -- ============================================================================
@@ -56,50 +56,49 @@ ORDER BY receita_total DESC;
 -- Proposito: Descobrir rotas com melhor valor por km
 -- Expectativa: Identificar rotas premium para otimizacao de frota
 -- Power BI: Tabela com ranking de rotas + Grafico de dispersao
-WITH base_rotas AS (
+WITH bse_rta AS (
     SELECT
-        lo.local AS local_origem,
-        ld.local AS local_destino,
-        lo.zona AS zona_origem,
-        ld.zona AS zona_destino,
-        lo.regiao AS regiao_origem,
-        ld.regiao AS regiao_destino,
-        COUNT(*) AS total_corridas,
-        SUM(f.valor_corrida) AS receita_total,
-        AVG(f.valor_por_km) AS valor_medio_por_km,
-        AVG(f.distancia_km) AS distancia_media_km,
-        AVG(f.duracao_minutos) AS duracao_media_min
-    FROM dw.ft_crr f
-    JOIN dw.dim_loc lo ON f.loc_ori_srk = lo.loc_srk
-    JOIN dw.dim_loc ld ON f.loc_dst_srk = ld.loc_srk
-    WHERE f.eh_corrida_completa = TRUE
-    GROUP BY lo.local, ld.local, lo.zona, ld.zona, lo.regiao, ld.regiao
+        lo.lcl AS lcl_org,
+        ld.lcl AS lcl_dtn,
+        lo.zna AS zna_org,
+        ld.zna AS zna_dtn,
+        lo.reg AS reg_org,
+        ld.reg AS reg_dtn,
+        COUNT(*) AS ttl_crr,
+        SUM(f.vlr_crr) AS rct_ttl,
+        AVG(f.vlr_por_km) AS vlr_mdo_por_km,
+        AVG(f.dtc_km) AS dtc_mda_km,
+        AVG(f.drc_min) AS drc_mda_min
+    FROM dw.fat_crr f
+    JOIN dw.dim_loc lo ON f.srk_loc_ori = lo.srk_loc
+    JOIN dw.dim_loc ld ON f.srk_loc_dst = ld.srk_loc
+    WHERE f.ver_crr_cpl = TRUE
+    GROUP BY lo.lcl, ld.lcl, lo.zna, ld.zna, lo.reg, ld.reg
 ),
-ranked_rotas AS (
+rnk_rta AS (
     SELECT
         *,
-        ROW_NUMBER() OVER (ORDER BY valor_medio_por_km DESC) AS pos_rentabilidade,
-        SUM(receita_total) OVER () AS receita_geral
-    FROM base_rotas
-    WHERE total_corridas >= 10
+        ROW_NUMBER() OVER (ORDER BY vlr_mdo_por_km DESC) AS pos_rnt,
+        SUM(rct_ttl) OVER () AS rct_grl
+    FROM bse_rta
+    WHERE ttl_crr >= 10
 )
 SELECT
-    local_origem,
-    local_destino,
-    zona_origem,
-    zona_destino,
-    regiao_origem,
-    regiao_destino,
-    total_corridas,
-    receita_total,
-    valor_medio_por_km,
-    distancia_media_km,
-    duracao_media_min,
-    ROUND(100.0 * receita_total / NULLIF(receita_geral, 0), 2) AS pct_receita_geral
-FROM ranked_rotas
-WHERE pos_rentabilidade <= 20
-ORDER BY pos_rentabilidade;
-
+    lcl_org,
+    lcl_dtn,
+    zna_org,
+    zna_dtn,
+    reg_org,
+    reg_dtn,
+    ttl_crr,
+    rct_ttl,
+    vlr_mdo_por_km,
+    dtc_mda_km,
+    drc_mda_min,
+    ROUND(100.0 * rct_ttl / NULLIF(rct_grl, 0), 2) AS pct_rct_grl
+FROM rnk_rta
+WHERE pos_rnt <= 20
+ORDER BY pos_rnt;
 
 -- ============================================================================
 -- 4. PERFORMANCE TEMPORAL POR PERIODO DO DIA
@@ -108,22 +107,22 @@ ORDER BY pos_rentabilidade;
 -- Expectativa: Identificar horarios de pico e oportunidades de otimizacao
 -- Power BI: Grafico de linha (receita por hora) + Matriz (dia x periodo)
 SELECT
-    t.nome_dia_semana,
-    t.periodo_dia,
-    t.eh_horario_pico,
-    COUNT(*) AS total_corridas,
-    SUM(f.distancia_km) AS distancia_total_km,
-    SUM(f.valor_corrida) AS receita_total,
-    AVG(f.valor_por_km) AS valor_medio_por_km,
-    AVG(f.avaliacao_motorista) AS avaliacao_motorista_media,
-    SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) AS corridas_completas,
-    ROUND(100.0 * SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) / 
-          NULLIF(COUNT(*), 0), 2) AS taxa_conclusao_pct
-FROM dw.ft_crr f
-JOIN dw.dim_tmp t ON f.tmp_srk = t.tmp_srk
-GROUP BY t.nome_dia_semana, t.periodo_dia, t.eh_horario_pico
+    t.nme_dia_smn,
+    t.prd_dia,
+    t.ver_hrr_pic,
+    COUNT(*) AS ttl_crr,
+    SUM(f.dtc_km) AS dtc_ttl_km,
+    SUM(f.vlr_crr) AS rct_ttl,
+    AVG(f.vlr_por_km) AS vlr_mdo_por_km,
+    AVG(f.avl_mtr) AS avl_mtr_mda,
+    SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) AS crr_cpl,
+    ROUND(100.0 * SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) / 
+          NULLIF(COUNT(*), 0), 2) AS txa_ccl_pct
+FROM dw.fat_crr f
+JOIN dw.dim_tmp t ON f.srk_tmp = t.srk_tmp
+GROUP BY t.nme_dia_smn, t.prd_dia, t.ver_hrr_pic
 ORDER BY 
-    CASE t.nome_dia_semana
+    CASE t.nme_dia_smn
         WHEN 'Monday' THEN 1
         WHEN 'Tuesday' THEN 2
         WHEN 'Wednesday' THEN 3
@@ -132,7 +131,7 @@ ORDER BY
         WHEN 'Saturday' THEN 6
         WHEN 'Sunday' THEN 7
     END,
-    CASE t.periodo_dia
+    CASE t.prd_dia
         WHEN 'Madrugada' THEN 1
         WHEN 'Manha' THEN 2
         WHEN 'Tarde' THEN 3
@@ -147,22 +146,21 @@ ORDER BY
 -- Expectativa: Identificar categorias mais rentaveis e com melhor avaliacao
 -- Power BI: Grafico de barras empilhadas + Cards com KPIs por categoria
 SELECT
-    v.categoria_veiculo,
-    v.tipo_veiculo,
-    COUNT(*) AS total_corridas,
-    SUM(f.valor_corrida) AS receita_total,
-    AVG(f.valor_por_km) AS valor_medio_por_km,
-    AVG(f.distancia_km) AS distancia_media_km,
-    AVG(f.duracao_minutos) AS duracao_media_min,
-    AVG(f.avaliacao_motorista) AS avaliacao_motorista_media,
-    SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) AS corridas_completas,
-    ROUND(100.0 * SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) / 
-          NULLIF(COUNT(*), 0), 2) AS taxa_conclusao_pct
-FROM dw.ft_crr f
-JOIN dw.dim_vei v ON f.vei_srk = v.vei_srk
-GROUP BY v.categoria_veiculo, v.tipo_veiculo
-ORDER BY receita_total DESC;
-
+    v.ctg_vei,
+    v.tpo_vei,
+    COUNT(*) AS ttl_crr,
+    SUM(f.vlr_crr) AS rct_ttl,
+    AVG(f.vlr_por_km) AS vlr_mdo_por_km,
+    AVG(f.dtc_km) AS dtc_mda_km,
+    AVG(f.drc_min) AS drc_mda_min,
+    AVG(f.avl_mtr) AS avl_mtr_mda,
+    SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) AS crr_cpl,
+    ROUND(100.0 * SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) / 
+          NULLIF(COUNT(*), 0), 2) AS txa_ccl_pct
+FROM dw.fat_crr f
+JOIN dw.dim_vei v ON f.srk_vei = v.srk_vei
+GROUP BY v.ctg_vei, v.tpo_vei
+ORDER BY rct_ttl DESC;
 
 -- ============================================================================
 -- 6. PERFIL E SEGMENTACAO DE CLIENTES (CTE)
@@ -170,40 +168,40 @@ ORDER BY receita_total DESC;
 -- Proposito: Analisar comportamento e valor por segmento de cliente
 -- Expectativa: Identificar clientes VIP e oportunidades de fidelizacao
 -- Power BI: Grafico de pizza (distribuicao de clientes) + Funil de segmentos
-WITH base_clientes AS (
+WITH bse_cli AS (
     SELECT
-        c.segmento_cliente,
-        COUNT(DISTINCT c.cli_srk) AS total_clientes,
-        COUNT(*) AS total_corridas,
-        AVG(f.valor_corrida) AS valor_medio_corrida,
-        AVG(f.distancia_km) AS distancia_media_km,
-        SUM(f.valor_corrida) AS receita_total,
-        AVG(f.avaliacao_cliente) AS avaliacao_cliente_media
-    FROM dw.ft_crr f
-    JOIN dw.dim_cli c ON f.cli_srk = c.cli_srk
-    WHERE f.eh_corrida_completa = TRUE
-    GROUP BY c.segmento_cliente
+        c.sgm_cli,
+        COUNT(DISTINCT c.srk_cli) AS ttl_cli,
+        COUNT(*) AS ttl_crr,
+        AVG(f.vlr_crr) AS vlr_mdo_crr,
+        AVG(f.dtc_km) AS dtc_mda_km,
+        SUM(f.vlr_crr) AS rct_ttl,
+        AVG(f.avl_cli) AS avl_cli_mda
+    FROM dw.fat_crr f
+    JOIN dw.dim_cli c ON f.srk_cli = c.srk_cli
+    WHERE f.ver_crr_cpl = TRUE
+    GROUP BY c.sgm_cli
 ),
-totais AS (
+tts AS (
     SELECT 
-        SUM(receita_total) AS receita_geral,
-        SUM(total_clientes) AS clientes_geral
-    FROM base_clientes
+        SUM(rct_ttl) AS rct_grl,
+        SUM(ttl_cli) AS cli_grl
+    FROM bse_cli
 )
 SELECT
-    bc.segmento_cliente,
-    bc.total_clientes,
-    ROUND(100.0 * bc.total_clientes / NULLIF(t.clientes_geral, 0), 2) AS pct_clientes,
-    bc.total_corridas,
-    ROUND(bc.total_corridas::NUMERIC / NULLIF(bc.total_clientes, 0), 2) AS corridas_por_cliente,
-    bc.valor_medio_corrida,
-    bc.distancia_media_km,
-    bc.receita_total,
-    ROUND(100.0 * bc.receita_total / NULLIF(t.receita_geral, 0), 2) AS pct_receita,
-    bc.avaliacao_cliente_media
-FROM base_clientes bc
-CROSS JOIN totais t
-ORDER BY bc.receita_total DESC;
+    bc.sgm_cli,
+    bc.ttl_cli,
+    ROUND(100.0 * bc.ttl_cli / NULLIF(t.cli_grl, 0), 2) AS pct_cli,
+    bc.ttl_crr,
+    ROUND(bc.ttl_crr::NUMERIC / NULLIF(bc.ttl_cli, 0), 2) AS crr_por_cli,
+    bc.vlr_mdo_crr,
+    bc.dtc_mda_km,
+    bc.rct_ttl,
+    ROUND(100.0 * bc.rct_ttl / NULLIF(t.rct_grl, 0), 2) AS pct_rct,
+    bc.avl_cli_mda
+FROM bse_cli bc
+CROSS JOIN tts t
+ORDER BY bc.rct_ttl DESC;
 
 
 -- ============================================================================
@@ -213,19 +211,19 @@ ORDER BY bc.receita_total DESC;
 -- Expectativa: Identificar tendencias de digitalizacao e ticket medio
 -- Power BI: Grafico de rosca (distribuicao) + Barras (valor medio)
 SELECT
-    p.categoria_pagamento,
-    p.metodo_pagamento,
-    COUNT(*) AS total_corridas,
-    SUM(f.valor_corrida) AS receita_total,
-    AVG(f.valor_corrida) AS valor_medio_corrida,
-    AVG(f.distancia_km) AS distancia_media_km,
-    SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) AS corridas_completas,
-    ROUND(100.0 * SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) / 
-          NULLIF(COUNT(*), 0), 2) AS taxa_conclusao_pct
-FROM dw.ft_crr f
-JOIN dw.dim_pag p ON f.pag_srk = p.pag_srk
-GROUP BY p.categoria_pagamento, p.metodo_pagamento
-ORDER BY receita_total DESC;
+    p.ctg_pag,
+    p.mtd_pag,
+    COUNT(*) AS ttl_crr,
+    SUM(f.vlr_crr) AS rct_ttl,
+    AVG(f.vlr_crr) AS vlr_mdo_crr,
+    AVG(f.dtc_km) AS dtc_mda_km,
+    SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) AS crr_cpl,
+    ROUND(100.0 * SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) / 
+          NULLIF(COUNT(*), 0), 2) AS txa_ccl_pct
+FROM dw.fat_crr f
+JOIN dw.dim_pag p ON f.srk_pag = p.srk_pag
+GROUP BY p.ctg_pag, p.mtd_pag
+ORDER BY rct_ttl DESC;
 
 
 -- ============================================================================
@@ -235,21 +233,21 @@ ORDER BY receita_total DESC;
 -- Expectativa: Identificar categorias mais lucrativas (curta/media/longa)
 -- Power BI: Grafico de barras agrupadas + Cards com metricas
 SELECT
-    f.categoria_distancia,
-    COUNT(*) AS total_corridas,
-    SUM(f.valor_corrida) AS receita_total,
-    AVG(f.valor_por_km) AS valor_medio_por_km,
-    AVG(f.distancia_km) AS distancia_media_km,
-    AVG(f.duracao_minutos) AS duracao_media_min,
-    AVG(f.avaliacao_motorista) AS avaliacao_motorista_media,
-    SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) AS corridas_completas,
-    ROUND(100.0 * SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) / 
-          NULLIF(COUNT(*), 0), 2) AS taxa_conclusao_pct
-FROM dw.ft_crr f
-WHERE f.categoria_distancia IS NOT NULL
-GROUP BY f.categoria_distancia
+    f.ctg_dtc,
+    COUNT(*) AS ttl_crr,
+    SUM(f.vlr_crr) AS rct_ttl,
+    AVG(f.vlr_crr) AS vlr_mdo_crr,
+    AVG(f.dtc_km) AS dtc_mda_km,
+    AVG(f.drc_min) AS drc_mda_min,
+    AVG(f.avl_mtr) AS avl_mtr_mda,
+    SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) AS crr_cpl,
+    ROUND(100.0 * SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) / 
+          NULLIF(COUNT(*), 0), 2) AS txa_ccl_pct
+FROM dw.fat_crr f
+WHERE f.ctg_dtc IS NOT NULL
+GROUP BY f.ctg_dtc
 ORDER BY 
-    CASE f.categoria_distancia
+    CASE f.ctg_dtc
         WHEN 'Curta' THEN 1
         WHEN 'Media' THEN 2
         WHEN 'Longa' THEN 3
@@ -262,38 +260,38 @@ ORDER BY
 -- Proposito: Comparar performance de rotas que cruzam regioes
 -- Expectativa: Identificar potencial de rotas longas entre regioes
 -- Power BI: Grafico de barras comparativas + Sankey diagram
-WITH base_regional AS (
+WITH bse_rgl AS (
     SELECT
-        CASE WHEN f.eh_rota_inter_regional THEN 'Inter-Regional' ELSE 'Intra-Regional' END AS tipo_rota,
-        lo.regiao AS regiao_origem,
-        ld.regiao AS regiao_destino,
-        COUNT(*) AS total_corridas,
-        SUM(f.valor_corrida) AS receita_total,
-        AVG(f.valor_por_km) AS valor_medio_por_km,
-        AVG(f.distancia_km) AS distancia_media_km,
-        AVG(f.duracao_minutos) AS duracao_media_min
-    FROM dw.ft_crr f
-    JOIN dw.dim_loc lo ON f.loc_ori_srk = lo.loc_srk
-    JOIN dw.dim_loc ld ON f.loc_dst_srk = ld.loc_srk
-    WHERE f.eh_corrida_completa = TRUE
-    GROUP BY tipo_rota, lo.regiao, ld.regiao
+        CASE WHEN f.ver_rta_itr_rgl THEN 'Inter-Regional' ELSE 'Intra-Regional' END AS tpo_rta,
+        lo.reg AS reg_org,
+        ld.reg AS reg_dtn,
+        COUNT(*) AS ttl_crr,
+        SUM(f.vlr_crr) AS rct_ttl,
+        AVG(f.vlr_crr) AS vlr_mdo_crr,
+        AVG(f.dtc_km) AS dtc_mda_km,
+        AVG(f.drc_min) AS drc_mda_min
+    FROM dw.fat_crr f
+    JOIN dw.dim_loc lo ON f.srk_loc_ori = lo.srk_loc
+    JOIN dw.dim_loc ld ON f.srk_loc_dst = ld.srk_loc
+    WHERE f.ver_crr_cpl = TRUE
+    GROUP BY tpo_rta, reg_org, reg_dtn
 ),
-totais AS (
-    SELECT SUM(receita_total) AS receita_geral FROM base_regional
+tts AS (
+    SELECT SUM(rct_ttl) AS rct_grl FROM bse_rgl
 )
 SELECT
-    br.tipo_rota,
-    br.regiao_origem,
-    br.regiao_destino,
-    br.total_corridas,
-    br.receita_total,
-    ROUND(100.0 * br.receita_total / NULLIF(t.receita_geral, 0), 2) AS pct_receita,
-    br.valor_medio_por_km,
-    br.distancia_media_km,
-    br.duracao_media_min
-FROM base_regional br
-CROSS JOIN totais t
-ORDER BY br.receita_total DESC;
+    br.tpo_rta,
+    br.reg_org,
+    br.reg_dtn,
+    br.ttl_crr,
+    br.rct_ttl,
+    ROUND(100.0 * br.rct_ttl / NULLIF(t.rct_grl, 0), 2) AS pct_rct,
+    br.vlr_mdo_crr,
+    br.dtc_mda_km,
+    br.drc_mda_min
+FROM bse_rgl br
+CROSS JOIN tts t
+ORDER BY br.rct_ttl DESC;
 
 
 -- ============================================================================
@@ -304,78 +302,72 @@ ORDER BY br.receita_total DESC;
 -- Power BI: Scatter plot (avaliacao x valor) + Histograma
 SELECT
     CASE 
-        WHEN f.avaliacao_motorista >= 4.5 THEN 'Excelente (4.5-5.0)'
-        WHEN f.avaliacao_motorista >= 4.0 THEN 'Bom (4.0-4.5)'
-        WHEN f.avaliacao_motorista >= 3.5 THEN 'Regular (3.5-4.0)'
+        WHEN f.avl_mtr >= 4.5 THEN 'Excelente (4.5-5.0)'
+        WHEN f.avl_mtr >= 4.0 THEN 'Bom (4.0-4.5)'
+        WHEN f.avl_mtr >= 3.5 THEN 'Regular (3.5-4.0)'
         ELSE 'Baixo (<3.5)'
-    END AS faixa_avaliacao_motorista,
-    COUNT(*) AS total_corridas,
-    AVG(f.valor_corrida) AS valor_medio_corrida,
-    AVG(f.distancia_km) AS distancia_media_km,
-    AVG(f.duracao_minutos) AS duracao_media_min,
-    AVG(f.avaliacao_cliente) AS avaliacao_cliente_media,
-    SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) AS corridas_completas,
-    ROUND(100.0 * SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) / 
-          NULLIF(COUNT(*), 0), 2) AS taxa_conclusao_pct
-FROM dw.ft_crr f
-WHERE f.avaliacao_motorista IS NOT NULL
-GROUP BY faixa_avaliacao_motorista
-ORDER BY 
-    CASE faixa_avaliacao_motorista
-        WHEN 'Excelente (4.5-5.0)' THEN 1
-        WHEN 'Bom (4.0-4.5)' THEN 2
-        WHEN 'Regular (3.5-4.0)' THEN 3
-        WHEN 'Baixo (<3.5)' THEN 4
-    END;
+    END AS fxa_avl_mtr,
+    COUNT(*) AS ttl_crr,
+    AVG(f.vlr_crr) AS vlr_mdo_crr,
+    AVG(f.dtc_km) AS dtc_mda_km,
+    AVG(f.drc_min) AS drc_mda_min,
+    AVG(f.avl_cli) AS avl_cli_mda,
+    SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) AS crr_cpl,
+    ROUND(100.0 * SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) / 
+          NULLIF(COUNT(*), 0), 2) AS txa_ccl_pct
+FROM dw.fat_crr f
+WHERE f.avl_mtr IS NOT NULL
+GROUP BY fxa_avl_mtr
+ORDER BY 1;
 
 
 -- ============================================================================
 -- 11. TENDENCIA MENSAL DE RECEITA E VOLUME
 -- ============================================================================
 -- Proposito: Analisar evolucao temporal de metricas chave
--- Expectativa: Identificar sazonalidade e tendencias de crescimento
+-- Expectativa: Identificar saznalidade e tendencias de crescimento
 -- Power BI: Grafico de linha temporal + Area chart
 SELECT
     t.ano,
     t.mes,
     t.mes_ano,
-    t.trimestre,
-    COUNT(*) AS total_corridas,
-    SUM(f.distancia_km) AS distancia_total_km,
-    SUM(f.valor_corrida) AS receita_total,
-    AVG(f.valor_por_km) AS valor_medio_por_km,
-    AVG(f.avaliacao_motorista) AS avaliacao_motorista_media,
-    SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) AS corridas_completas,
-    ROUND(100.0 * SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) / 
-          NULLIF(COUNT(*), 0), 2) AS taxa_conclusao_pct
-FROM dw.ft_crr f
-JOIN dw.dim_tmp t ON f.tmp_srk = t.tmp_srk
-GROUP BY t.ano, t.mes, t.mes_ano, t.trimestre
+    t.trm,
+    COUNT(*) AS ttl_crr,
+    SUM(f.dtc_km) AS dtc_ttl_km,
+    SUM(f.vlr_crr) AS rct_ttl,
+    AVG(f.vlr_por_km) AS vlr_mdo_por_km,
+    AVG(f.avl_mtr) AS avl_mtr_mda,
+    SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) AS crr_cpl,
+    ROUND(100.0 * SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) / 
+          NULLIF(COUNT(*), 0), 2) AS txa_ccl_pct
+FROM dw.fat_crr f
+JOIN dw.dim_tmp t ON f.srk_tmp = t.srk_tmp
+GROUP BY t.ano, t.mes, t.mes_ano, t.trm
 ORDER BY t.ano, t.mes;
 
 
 -- ============================================================================
--- 12. TOP 10 LOCAIS DE ORIGEM COM MAIOR DEMANDA
+-- 12. TOP 10 LOCAIS DE org COM MAIOR DEMANDA
 -- ============================================================================
 -- Proposito: Identificar pontos de alta demanda para otimizacao de frota
 -- Expectativa: Concentrar veiculos em locais estrategicos
 -- Power BI: Grafico de barras horizontais + Mapa de calor
 SELECT
-    lo.local AS local_origem,
-    lo.zona AS zona_origem,
-    lo.regiao AS regiao_origem,
-    lo.tipo_area,
-    COUNT(*) AS total_corridas,
-    SUM(f.valor_corrida) AS receita_total,
-    AVG(f.valor_por_km) AS valor_medio_por_km,
-    AVG(f.distancia_km) AS distancia_media_km,
-    SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) AS corridas_completas,
-    ROUND(100.0 * SUM(CASE WHEN f.eh_corrida_completa THEN 1 ELSE 0 END) / 
-          NULLIF(COUNT(*), 0), 2) AS taxa_conclusao_pct
-FROM dw.ft_crr f
-JOIN dw.dim_loc lo ON f.loc_ori_srk = lo.loc_srk
-GROUP BY lo.local, lo.zona, lo.regiao, lo.tipo_area
-ORDER BY total_corridas DESC
+    lo.lcl AS lcl_org,
+    lo.zna AS zna_org,
+    lo.reg AS reg_org,
+    lo.tpo_ara AS tpo_ara_org,
+    COUNT(*) AS ttl_crr,
+    SUM(f.vlr_crr) AS rct_ttl,
+    AVG(f.vlr_por_km) AS vlr_mdo_por_km,
+    AVG(f.dtc_km) AS dtc_mda_km,
+    SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) AS crr_cpl,
+    ROUND(100.0 * SUM(CASE WHEN f.ver_crr_cpl THEN 1 ELSE 0 END) / 
+          NULLIF(COUNT(*), 0), 2) AS txa_ccl_pct
+FROM dw.fat_crr f
+JOIN dw.dim_loc lo ON f.srk_loc_ori = lo.srk_loc
+GROUP BY lo.lcl, lo.zna, lo.reg, lo.tpo_ara
+ORDER BY ttl_crr DESC
 LIMIT 10;
 
 

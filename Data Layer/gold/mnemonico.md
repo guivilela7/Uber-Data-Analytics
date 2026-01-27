@@ -29,6 +29,7 @@ Este documento define todas as abreviacoes e convencoes de nomenclatura utilizad
 | cliente | cli |
 | segmento | sgm |
 | total | ttl |
+| totais | tts |
 | viagens | vig |
 | historico | hst |
 | pagamento | pag |
@@ -55,7 +56,7 @@ Este documento define todas as abreviacoes e convencoes de nomenclatura utilizad
 | original | org |
 | pickup | pck |
 | drop  | drp |
-|resumo | rsm |
+| resumo | rsm |
 | origem | org |
 | destino | dtn |
 | receita | rct |
@@ -66,3 +67,9 @@ Este documento define todas as abreviacoes e convencoes de nomenclatura utilizad
 | analise | anl |
 | taxa | txa |
 | conclusao | ccl |
+| rentabilidade | rnt |
+| geral | grl |
+| base | bse |
+| ranked | rnk |
+| faixa | fxa |
+| percentual | pct |
