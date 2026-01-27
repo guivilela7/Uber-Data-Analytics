@@ -1,3 +1,6 @@
 pandas
 matplotlib
 seaborn
+psycopg2
+sqlalchemy
+numpy
