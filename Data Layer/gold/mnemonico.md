@@ -53,3 +53,16 @@ Este documento define todas as abreviacoes e convencoes de nomenclatura utilizad
 | coleta | col |
 | booking | bok |
 | original | org |
+| pickup | pck |
+| drop  | drp |
+|resumo | rsm |
+| origem | org |
+| destino | dtn |
+| receita | rct |
+| medio   | mdo |
+| media  | mda |
+| performance | pfm |
+| temporal | tpr |
+| analise | anl |
+| taxa | txa |
+| conclusao | ccl |
