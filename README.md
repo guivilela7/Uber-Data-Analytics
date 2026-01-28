@@ -45,8 +45,9 @@ Cada camada possui um papel específico dentro do fluxo de dados.
 │   ├── silver/           # Dados limpos e padronizados
 │   └── gold/             # Dados analíticos prontos para BI
 ├── Transformer/          # Scripts e notebooks de ETL
-├── notebooks/            # Análises exploratórias
+├── .env                  # Arquivo de variáveis de ambiente
 ├── docker-compose.yml    # Ambiente containerizado
+├── Dockerfile            # Arquivo de configurações do Docker
 ├── requirements.txt      # Dependências do projeto
 └── README.md             # Documentação
 ```
@@ -107,16 +108,43 @@ Os dados da camada **Gold** podem ser facilmente integrados a ferramentas de BI 
 ### Usando Docker
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
-### Ambiente Python Local
+#### Acessar os Serviços
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+Após os containers iniciarem, os seguintes serviços estarão disponíveis:
+
+| Serviço | URL de Acesso | Descrição |
+| :--- | :--- | :--- |
+| **Jupyter Lab** | [http://localhost:8888](http://localhost:8888) | Ambiente para executar os notebooks de ETL e análise. |
+| **pgAdmin** | [http://localhost:5050](http://localhost:5050) | Ferramenta para gerenciar e executar queries no banco de dados. |
+
+#### Configurar o pgAdmin
+
+Ao acessar o pgAdmin pela primeira vez, siga estes passos:
+
+1.  **Faça login** com as credenciais do arquivo `.env` (padrão: `admin@admin.com` / `admin`). ||| Caso não haja tela de login, será pedido apenas a criação de uma senha global, que recomendamos ser `admin` para praticidade.
+2.  Clique em **Add New Server**.
+3.  Preencha as informações de conexão:
+    - **Aba General**:
+        - **Name**: `Uber Analytics Docker` (pode ser o nome que preferir)
+    - **Aba Connection**:
+        - **Host**: `postgres` 
+        - **Port**: `5432`
+        - **Maintenance database**: `uber_analytics`
+        - **Username**: `postgres`
+        - **Password**: `postgres`
+4.  Clique em **Save**.
+
+### Executar os Notebooks
+
+No Jupyter Lab, navegue até a pasta `Transformer` e execute os notebooks na seguinte ordem:
+
+1.  **`etl_raw_to_silver.ipynb`**: Carrega os dados brutos, limpa-os e armazena na camada Silver.
+2.  **`etl_silver_to_gold.ipynb`**: Transforma os dados da camada Silver e os carrega no modelo dimensional (camada Gold).
+
+Após a execução dos arquivos ETL, os dados estão disponíveis para buscas pelo pgAdmin.
 
 ---
 
@@ -128,8 +156,6 @@ Os notebooks estão organizados para:
 * Validação das transformações
 * Análises estatísticas
 * Visualizações exploratórias
-
-Execute-os preferencialmente após o processamento da camada **Silver**.
 
 ---
 
@@ -152,6 +178,8 @@ Execute-os preferencialmente após o processamento da camada **Silver**.
 
 ---
 
-## Contato
+## Integrantes
 
-* GitHub: [https://github.com/guivilela7](https://github.com/guivilela7)
+| ![Guilherme Aguera de la Fuente Vilela](https://github.com/guivilela7.png) | ![⁠Lucas Oliveira Meireles](https://github.com/katuner.png) | ![Víctor Moreira Almeida](https://github.com/vitu-moreira.png) | ![⁠Felipe Nunes de Mello](https://github.com/FelipeNunesdM.png) |
+| ----- | ----- | ----- | ----- |
+| [Guilherme Aguera de la Fuente Vilela](https://github.com/guivilela7)  | [⁠Lucas Oliveira Meireles](https://github.com/katuner)  | [Víctor Moreira Almeida](https://github.com/vitu-moreira)  | [⁠Felipe Nunes de Mello](https://github.com/FelipeNunesdM)  | 

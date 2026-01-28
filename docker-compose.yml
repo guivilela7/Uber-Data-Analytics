@@ -1,17 +1,69 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: uber_data_analytics
+    container_name: uber_data_postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-uber_analytics_silver}
+      POSTGRES_DB: ${POSTGRES_DB:-uber_analytics}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       TZ: ${TZ:-UTC}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - uber_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: uber_data_jupyter
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-uber_analytics}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ./:/home/jovyan/work
+    networks:
+      - uber_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: uber_data_pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - uber_network
+    depends_on:
+      - postgres
 
 volumes:
   postgres_data:
+  pgadmin_data:
+
+networks:
+  uber_network:
+    driver: bridge

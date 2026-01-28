@@ -1,6 +1,7 @@
 pandas
 matplotlib
 seaborn
-psycopg2
+psycopg2-binary
 sqlalchemy
 numpy
+jupyterlab
