@@ -370,6 +370,80 @@ GROUP BY lo.lcl, lo.zna, lo.reg, lo.tpo_ara
 ORDER BY ttl_crr DESC
 LIMIT 10;
 
+-- ============================================================================
+-- CONSULTA 13: DISTRIBUIÇÃO DE FREQUÊNCIA DE CLIENTES
+-- ============================================================================
+-- Propósito: Analisar a concentração de uso - quantos clientes fizeram 1, 2, 3+ corridas
+-- Expectativa: Mostrar que poucos clientes fazem múltiplas viagens
+-- Power BI: Histograma + Gráfico de Pareto + Cards de concentração
+
+WITH frequencia_por_cliente AS (
+    SELECT
+        c.srk_cli,
+        c.id_cli,
+        c.sgm_cli,
+        COUNT(*) AS num_corridas,
+        SUM(f.vlr_crr) AS rct_ttl_cli,
+        AVG(f.vlr_crr) AS vlr_mdo_cli,
+        AVG(f.avl_mtr) AS avl_mtr_mda
+    FROM dw.fat_crr f
+    JOIN dw.dim_cli c ON f.srk_cli = c.srk_cli
+    WHERE f.ver_crr_cpl = TRUE
+    GROUP BY c.srk_cli, c.id_cli, c.sgm_cli
+),
+distribuicao_frequencia AS (
+    SELECT
+        CASE 
+            WHEN num_corridas = 1 THEN '1 corrida'
+            WHEN num_corridas = 2 THEN '2 corridas'
+            WHEN num_corridas = 3 THEN '3 corridas'
+            WHEN num_corridas BETWEEN 4 AND 5 THEN '4-5 corridas'
+            WHEN num_corridas BETWEEN 6 AND 10 THEN '6-10 corridas'
+            ELSE '11+ corridas'
+        END AS faixa_frequencia,
+        num_corridas,
+        COUNT(*) AS qtd_clientes,
+        SUM(rct_ttl_cli) AS rct_ttl,
+        AVG(vlr_mdo_cli) AS vlr_mdo,
+        AVG(avl_mtr_mda) AS avl_mtr_mda
+    FROM frequencia_por_cliente
+    GROUP BY 
+        CASE 
+            WHEN num_corridas = 1 THEN '1 corrida'
+            WHEN num_corridas = 2 THEN '2 corridas'
+            WHEN num_corridas = 3 THEN '3 corridas'
+            WHEN num_corridas BETWEEN 4 AND 5 THEN '4-5 corridas'
+            WHEN num_corridas BETWEEN 6 AND 10 THEN '6-10 corridas'
+            ELSE '11+ corridas'
+        END,
+        num_corridas
+),
+totais AS (
+    SELECT 
+        SUM(qtd_clientes) AS total_clientes,
+        SUM(rct_ttl) AS rct_geral
+    FROM distribuicao_frequencia
+)
+SELECT
+    df.faixa_frequencia,
+    df.qtd_clientes,
+    ROUND(100.0 * df.qtd_clientes / NULLIF(t.total_clientes, 0), 2) AS pct_clientes,
+    df.rct_ttl,
+    ROUND(100.0 * df.rct_ttl / NULLIF(t.rct_geral, 0), 2) AS pct_receita,
+    df.vlr_mdo,
+    df.avl_mtr_mda
+FROM distribuicao_frequencia df
+CROSS JOIN totais t
+ORDER BY 
+    CASE df.faixa_frequencia
+        WHEN '1 corrida' THEN 1
+        WHEN '2 corridas' THEN 2
+        WHEN '3 corridas' THEN 3
+        WHEN '4-5 corridas' THEN 4
+        WHEN '6-10 corridas' THEN 5
+        WHEN '11+ corridas' THEN 6
+    END
+
 
 -- ============================================================================
 -- FIM DAS CONSULTAS
