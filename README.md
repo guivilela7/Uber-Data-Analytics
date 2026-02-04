@@ -44,6 +44,7 @@ Cada camada possui um papel específico dentro do fluxo de dados.
 │   ├── raw/              # Dados brutos, sem tratamento
 │   ├── silver/           # Dados limpos e padronizados
 │   └── gold/             # Dados analíticos prontos para BI
+├── Data Visualization/   # Arquivo .pbix do PowerBI
 ├── Transformer/          # Scripts e notebooks de ETL
 ├── .env                  # Arquivo de variáveis de ambiente
 ├── docker-compose.yml    # Ambiente containerizado
